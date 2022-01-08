@@ -5,27 +5,23 @@ import autograd.numpy as np
 
 import scipy.integrate
 solve_ivp = scipy.integrate.solve_ivp
-
-
-
-def initial(noise=1):
-    g=9.8
-    state = np.zeros((2,5))
-    state[:,0] = 1#m1,m2
-    pos = np.random.rand(2) * (max_radius-min_radius) + min_radius
-    r = np.sqrt( np.sum((pos**2)) )
+l1 = 2.0
+l2 = 2.0
+g = 9.8
+def initial(orbit_noise=5e-2, min_radius=0.5, max_radius=1.5):
+    global g
+    state = np.zeros((2,3))
+    state[:,0] = [1, 1]  #m1,  m2
     # get initial state
-    state[:,2] = (np.random.rand(2)-0.5)*np.pi
-    state[:,1] = np.random.rand(2)*9 + 1 # sample a range of radii
-    # velocity that yields a circular orbit
-    state[:,3] = np.zeros((2,1))
-    state[:,4] = (np.random.rand(2)-0.5)*np.pi/2
+    state[:,1] = (np.random.rand(2)-0.5)*np.pi #theta, phi
+    state[:,2] = (np.random.rand(2)-0.5)*np.pi/2 #p_theta ,p_phi
     return state
 
 def hamiltonian_fn(coords):
-    state[:,1], state[:2], state[:3], state[:4]=np.split(coords,4)
-    H = (state[1,0]*(state[1,1]*state[0,4])**2+(state[0,0]+state[1,0])*(state[0,1]*state[1,4])**2-2*state[1,0]*state[0,1]*state[1,1]*state[0,4]*state[1,4]*np.cos(state[0,2]-state[1,2]))/(2*state[1,0]*((state[0,1]*state[1,1])**2)*state[0,0]+state[1,0]*(np.sin(state[0,2]-state[1,2]))**2)
-    -(state[0,0]+state[1,0])*g*state[0,1]*np.cos(state[0,2])-state[1,0]*g*state[1,1]*np.cos(state[1,2])# pendulum hamiltonian
+    global l1, l2, g
+    state[:,1], state[:,2]= np.split(coords,2)
+    H = (state[1,0]*(l2*state[0,2])**2+(state[0,0]+state[1,0])*(l1*state[1,2])**2-2*state[1,0]*l1*l2*state[0,2]*state[1,2]*np.cos(state[0,1]-state[1,1]))/(2*state[1,0]*((l1*l2)**2)*(state[0,0]+state[1,0]*(np.sin(state[0,1]-state[1,1]))**2))
+    -(state[0,0]+state[1,0])*g*l1*np.cos(state[0,1])-state[1,0]*g*l2*np.cos(state[1,1])# pendulum hamiltonian
     return H
 
 def dynamics_fn(t,
@@ -38,8 +34,8 @@ def dynamics_fn(t,
 def get_trajectory(state, t_span=[0,3], timescale=15, noise_std=0.1, **kwargs):
     t_eval = np.linspace(t_span[0], t_span[1], int(timescale*(t_span[1]-t_span[0])))
     
-    spring_ivp = solve_ivp(fun=dynamics_fn, t_span=t_span, y0=np.concatenate([state[:1], state[:2], state[:,3], state[:,4]]), t_eval=t_eval, rtol=1e-10, **kwargs)
-    q, p = spring_ivp['y'][0:4], spring_ivp['y'][4:8]
+    spring_ivp = solve_ivp(fun=dynamics_fn, t_span=t_span, y0=np.concatenate([state[:1], state[:2]]), t_eval=t_eval, rtol=1e-10, **kwargs)
+    q, p = spring_ivp['y'][:0], spring_ivp['y'][:1]
     dydt = [dynamics_fn(None, y) for y in spring_ivp['y'].T]
     dydt = np.stack(dydt).T
     dqdt, dpdt = np.split(dydt,2)
