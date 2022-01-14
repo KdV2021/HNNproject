@@ -23,7 +23,7 @@ def get_args():
     parser.add_argument('--total_steps', default=5000, type=int, help='number of gradient steps')
     parser.add_argument('--print_every', default=200, type=int, help='number of gradient steps between prints')
     parser.add_argument('--name', default='pend', type=str, help='only one option right now')
-    parser.add_argument('--baseline', default=True, dest='baseline', action='store_true', help='run baseline or experiment?')
+    parser.add_argument('--baseline', default=False, dest='baseline', action='store_true', help='run baseline or experiment?')
     parser.add_argument('--use_rk4', dest='use_rk4', action='store_true', help='integrate derivative with RK4')
     parser.add_argument('--verbose', dest='verbose', action='store_true', help='verbose?')
     parser.add_argument('--field_type', default='solenoidal', type=str, help='type of vector field to learn')
